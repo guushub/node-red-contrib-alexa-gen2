@@ -39,9 +39,10 @@ export function register(RED: Red) {
                     msg.res._res.set(headers);
                 }
 
+                // Just for test. TODO: build response from sdk.
                 const statusCode = 200;
-                if (typeof msg.payload == "object" && !Buffer.isBuffer(msg.payload)) {
-                    msg.res._res.status(statusCode).jsonp(msg.payload);
+                if (msg.payload && typeof msg.payload.alexaResponse === "object" && !Buffer.isBuffer(msg.payload.alexaResponse)) {
+                    msg.res._res.status(statusCode).jsonp(msg.payload.alexaResponse);
                 } else {
                     if (msg.res._res.get('content-length') == null) {
                         var len;

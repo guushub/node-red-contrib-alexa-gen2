@@ -33,6 +33,47 @@ export function register(RED: Red) {
             }
 
             const node = this;
+            function createResponseWrapper(node,res) {
+                var wrapper = {
+                    _res: res
+                };
+                var toWrap = [
+                    "append",
+                    "attachment",
+                    "cookie",
+                    "clearCookie",
+                    "download",
+                    "end",
+                    "format",
+                    "get",
+                    "json",
+                    "jsonp",
+                    "links",
+                    "location",
+                    "redirect",
+                    "render",
+                    "send",
+                    "sendfile",
+                    "sendFile",
+                    "sendStatus",
+                    "set",
+                    "status",
+                    "type",
+                    "vary"
+                ];
+                toWrap.forEach(function(f) {
+                    wrapper[f] = function() {
+                        node.warn((RED as any)._("httpin.errors.deprecated-call",{method:"msg.res."+f}));
+                        var result = res[f].apply(res,arguments);
+                        if (result === res) {
+                            return wrapper;
+                        } else {
+                            return result;
+                        }
+                    }
+                });
+                return wrapper;
+            }
 
             const requestHandler: RequestHandler = {
                 canHandle: (handlerInput : HandlerInput) : boolean => {
@@ -74,7 +115,7 @@ export function register(RED: Red) {
                 .then((responseBody) => {
                     const msg = {
                         req: req,
-                        res: res, 
+                        res: createResponseWrapper(node, res), 
                         payload: {
                             alexaRequest: requestBody,
                             alexaResponse: responseBody
@@ -202,46 +243,5 @@ export function register(RED: Red) {
 //     });
 
 
-//     return wrapper;
-// }
-// function createResponseWrapper(node,res) {
-//     var wrapper = {
-//         _res: res
-//     };
-//     var toWrap = [
-//         "append",
-//         "attachment",
-//         "cookie",
-//         "clearCookie",
-//         "download",
-//         "end",
-//         "format",
-//         "get",
-//         "json",
-//         "jsonp",
-//         "links",
-//         "location",
-//         "redirect",
-//         "render",
-//         "send",
-//         "sendfile",
-//         "sendFile",
-//         "sendStatus",
-//         "set",
-//         "status",
-//         "type",
-//         "vary"
-//     ];
-//     toWrap.forEach(function(f) {
-//         wrapper[f] = function() {
-//             node.warn((RED as any)._("httpin.errors.deprecated-call",{method:"msg.res."+f}));
-//             var result = res[f].apply(res,arguments);
-//             if (result === res) {
-//                 return wrapper;
-//             } else {
-//                 return result;
-//             }
-//         }
-//     });
 //     return wrapper;
 // }
