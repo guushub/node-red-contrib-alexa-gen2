@@ -4,11 +4,22 @@ import StandardCard = ui.StandardCard;
 
 export interface Payload { 
     alexaRequest: RequestEnvelope,
-    alexaResponse: ResponseEnvelope
+    alexaResponse: ResponseEnvelope,
+    alexaResponseBuilderInput?: AlexaResponseAddition
+
 }
 
-
-
+export interface AlexaResponseAddition {
+    speachOutput?: string,
+    card?: {
+        cardTitle: string, 
+        cardContent: string, 
+        smallImageUrl?: string, 
+        largeImageUrl?: string
+    },
+    withShouldEndSession?: boolean,
+    canFulfillIntent?: canfulfill.CanFulfillIntent
+}
 
 export enum AlexaNodeRedRequestType {
     "LaunchRequest" = "LaunchRequest",

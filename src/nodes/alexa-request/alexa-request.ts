@@ -1,17 +1,25 @@
 import * as bodyParser from "body-parser";
 
-import { Red, Node, NodeProperties } from "node-red";
+import { Red, NodeProperties } from "node-red";
 
 import { HandlerInput, RequestHandler, ErrorHandler, ResponseInterceptor } from 'ask-sdk-core';
-import { Response, RequestEnvelope } from 'ask-sdk-model';
-import { SkillBuilders, Skill } from "ask-sdk";
+import { Response, RequestEnvelope, ResponseEnvelope } from 'ask-sdk-model';
+import { SkillBuilders } from "ask-sdk";
 
 import { AlexaNodeRedRequestType }  from "../../alexa-node-red/alexa-node-red";
-import { AlexaConfigNode } from "../alexa-config/alexa-config";
+import { Utilities } from "../../utilities/utilities";
 
 
 interface AlexaRequestNodeProperties extends NodeProperties {
     url: string; 
+}
+
+interface AlexaNodeRedResponse extends Response {
+    isError?: boolean
+}
+
+interface AlexaNodeRedResponseEnvelope extends ResponseEnvelope {
+    res
 }
 
 // Sources: 
@@ -33,48 +41,6 @@ export function register(RED: Red) {
             }
 
             const node = this;
-            function createResponseWrapper(node,res) {
-                var wrapper = {
-                    _res: res
-                };
-                var toWrap = [
-                    "append",
-                    "attachment",
-                    "cookie",
-                    "clearCookie",
-                    "download",
-                    "end",
-                    "format",
-                    "get",
-                    "json",
-                    "jsonp",
-                    "links",
-                    "location",
-                    "redirect",
-                    "render",
-                    "send",
-                    "sendfile",
-                    "sendFile",
-                    "sendStatus",
-                    "set",
-                    "status",
-                    "type",
-                    "vary"
-                ];
-                toWrap.forEach(function(f) {
-                    wrapper[f] = function() {
-                        node.warn((RED as any)._("httpin.errors.deprecated-call",{method:"msg.res."+f}));
-                        var result = res[f].apply(res,arguments);
-                        if (result === res) {
-                            return wrapper;
-                        } else {
-                            return result;
-                        }
-                    }
-                });
-                return wrapper;
-            }
-
             const requestHandler: RequestHandler = {
                 canHandle: (handlerInput : HandlerInput) : boolean => {
                     const typeIncoming = handlerInput.requestEnvelope.request.type;
@@ -84,8 +50,13 @@ export function register(RED: Red) {
                         typeIncoming === AlexaNodeRedRequestType.SessionEndedRequest
                 },
                 handle: (handlerInput : HandlerInput) : Response => {
-                    return handlerInput.responseBuilder
-                    .getResponse();
+                    handlerInput.attributesManager.setSessionAttributes({
+                        isError: false
+                    });
+                    const response: AlexaNodeRedResponse = handlerInput.responseBuilder
+                    .getResponse()
+                    
+                    return response;
                 },
             }
             
@@ -93,10 +64,15 @@ export function register(RED: Red) {
                 canHandle(handlerInput : HandlerInput, error : Error) : boolean {
                     return error.name.startsWith('AskSdk');
                 },
-                handle(handlerInput : HandlerInput, error : Error) : Response {
-                    return handlerInput.responseBuilder
+                handle(handlerInput : HandlerInput, error : Error) : AlexaNodeRedResponse {
+                    handlerInput.attributesManager.setSessionAttributes({
+                        isError: true
+                    });
+                    const response: AlexaNodeRedResponse = handlerInput.responseBuilder
                     .speak('An error was encountered while handling your request. Try again later')
                     .getResponse();
+                    return response;
+
                 },
             };
     
@@ -110,12 +86,17 @@ export function register(RED: Red) {
                   .create();
 
             const invokeSkill = (req, res) => {
+                
                 const requestBody = req.body as RequestEnvelope;
                 skill.invoke(requestBody)
                 .then((responseBody) => {
+                    if(responseBody.sessionAttributes && responseBody.sessionAttributes.isError) {
+                        res.status(200).jsonp(responseBody);
+                        return;
+                    }
                     const msg = {
-                        req: req,
-                        res: createResponseWrapper(node, res), 
+                        req: Utilities.createRequestWrapper(req),
+                        res: Utilities.createResponseWrapper(res), 
                         payload: {
                             alexaRequest: requestBody,
                             alexaResponse: responseBody
@@ -163,85 +144,3 @@ export function register(RED: Red) {
 
     RED.nodes.registerType("alexa request", AlexaRequest);
 }
-
-
-// const LaunchRequestHandler : RequestHandler = {
-//   canHandle(handlerInput : HandlerInput) : boolean {
-//     return handlerInput.requestEnvelope.request.type === 'LaunchRequest'
-//   },
-//   handle(handlerInput : HandlerInput) : Response {
-//     const speechText = 'Hello Launch!';
-
-//     return handlerInput.responseBuilder
-//       .speak(speechText)
-//       .withSimpleCard('Hello Launch', speechText)
-//       .getResponse();
-//   },
-// };
-
-// const IntentRequestHandler : RequestHandler = {
-//     canHandle(handlerInput : HandlerInput) : boolean {
-//       return handlerInput.requestEnvelope.request.type === 'IntentRequest'
-//     },
-//     handle(handlerInput : HandlerInput) : Response {
-//       const speechText = 'Hello Intent!';
-  
-//       return handlerInput.responseBuilder
-//         .speak(speechText)
-//         .withSimpleCard('Hello Intent', speechText)
-//         .getResponse();
-//     },
-//   };
-
-// function createRequestWrapper(node,req) {
-//     // This misses a bunch of properties (eg headers). Before we use this function
-//     // need to ensure it captures everything documented by Express and HTTP modules.
-//     var wrapper = {
-//         _req: req
-//     };
-//     var toWrap = [
-//         "param",
-//         "get",
-//         "is",
-//         "acceptsCharset",
-//         "acceptsLanguage",
-//         "app",
-//         "baseUrl",
-//         "body",
-//         "cookies",
-//         "fresh",
-//         "hostname",
-//         "ip",
-//         "ips",
-//         "originalUrl",
-//         "params",
-//         "path",
-//         "protocol",
-//         "query",
-//         "route",
-//         "secure",
-//         "signedCookies",
-//         "stale",
-//         "subdomains",
-//         "xhr",
-//         "socket" // TODO: tidy this up
-//     ];
-//     toWrap.forEach(function(f) {
-//         if (typeof req[f] === "function") {
-//             wrapper[f] = function() {
-//                 node.warn((RED as any)._("httpin.errors.deprecated-call",{method:"msg.req."+f}));
-//                 var result = req[f].apply(req,arguments);
-//                 if (result === req) {
-//                     return wrapper;
-//                 } else {
-//                     return result;
-//                 }
-//             }
-//         } else {
-//             wrapper[f] = req[f];
-//         }
-//     });
-
-
-//     return wrapper;
-// }
