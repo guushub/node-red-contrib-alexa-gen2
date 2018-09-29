@@ -2,7 +2,7 @@ import { Red, Node, NodeProperties } from "node-red";
 import { HandlerInput, RequestHandler, ErrorHandler, ResponseInterceptor } from 'ask-sdk-core';
 import { Response, RequestEnvelope } from 'ask-sdk-model';
 import { SkillBuilders } from "ask-sdk";
-import { AlexaNodeRedRequestType, AlexaResponseAddition } from "../../alexa-node-red/alexa-node-red";
+import { AlexaNodeRedRequestType, AlexaResponseBuilderInput, Payload } from "../../alexa-node-red/alexa-node-red";
 import { Utilities } from "../../utilities/utilities";
 
 interface AlexaResponseNodeProperties extends NodeProperties {
@@ -14,7 +14,7 @@ interface ExtendedHandlerInput extends HandlerInput {
 }
 
 interface ExtendedRequestEnvelope extends RequestEnvelope {
-    alexaResponseAddition: AlexaResponseAddition
+    alexaResponseBuilderInput: AlexaResponseBuilderInput
 }
 // Sources: 
 // https://github.com/node-red/node-red/blob/master/nodes/core/io/21-httpin.js
@@ -24,14 +24,10 @@ export function register(RED: Red) {
         RED.nodes.createNode(this, config);
         const node = this;
 
-        this.on("input",function(msg) {
+        this.on("input",function(msg: { res: any, req: any, payload: Payload }) {
             if (msg.res && msg.req) {
                 const res = msg.res._res;
                 const req = msg.req._req;
-                req.body.alexaResponseAddition = {
-                    speachOutput: "Hoi from response!"
-                }
-                
 
                 const headers = {
                     "Content-Type": "application/json;charset=UTF-8",
@@ -52,7 +48,7 @@ export function register(RED: Red) {
                     },
                     handle: (handlerInput : ExtendedHandlerInput) : Response => {
                         let responseBuilder = handlerInput.responseBuilder;
-                        const responseInfo = handlerInput.requestEnvelope.alexaResponseAddition;
+                        const responseInfo = handlerInput.requestEnvelope.alexaResponseBuilderInput;
                         if(!responseInfo) {
                             return responseBuilder
                             .withShouldEndSession(true)
@@ -110,7 +106,8 @@ export function register(RED: Red) {
                       )
                       .create();
 
-                const requestBody = req.body as RequestEnvelope;
+                const requestBody = req.body as ExtendedRequestEnvelope;
+                requestBody.alexaResponseBuilderInput = msg.payload.alexaResponseBuilderInput;
                 skill.invoke(requestBody)
                 .then((responseBody) => {
                     const msg = {

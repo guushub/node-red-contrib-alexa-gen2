@@ -1,9 +1,5 @@
 import { Red } from "node-red";
-// import * as ProcessRequest from "./nodes/process-request/process-request";
-// import * as ProcessResponse from "./nodes/process-response/process-response";
-// import * as ValidateRequest from "./nodes/validate-request/validate-request";
-import * as Say from "./nodes/say/say";
-
+import * as AlexaSpeak from "./nodes/alexa-speak/alexa-speak";
 import * as AlexaConfig from "./nodes/alexa-config/alexa-config";
 import * as AlexaRequest from "./nodes/alexa-request/alexa-request";
 import * as AlexaResponse from "./nodes/alexa-response/alexa-response";
@@ -13,7 +9,7 @@ module.exports = (RED: Red) => {
     //ValidateRequest.register(RED);
     // ProcessRequest.register(RED);
     // ProcessResponse.register(RED);
-    Say.register(RED);
+    AlexaSpeak.register(RED);
     AlexaRequest.register(RED);
     AlexaResponse.register(RED);
 }

@@ -5,11 +5,11 @@ import StandardCard = ui.StandardCard;
 export interface Payload { 
     alexaRequest: RequestEnvelope,
     alexaResponse: ResponseEnvelope,
-    alexaResponseBuilderInput?: AlexaResponseAddition
+    alexaResponseBuilderInput?: AlexaResponseBuilderInput
 
 }
 
-export interface AlexaResponseAddition {
+export interface AlexaResponseBuilderInput {
     speachOutput?: string,
     card?: {
         cardTitle: string, 
