@@ -13,9 +13,10 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
     "prebuild": "npm run clean:dist",
-    "postbuild": "gulp concat-html && npm run postbuild:package.json",
+    "postbuild": "gulp concat-html && npm run postbuild:package.json && npm run postbuild:icon",
     "postbuild:html": "./node_modules/.bin/copyfiles -u 1 ./src/nodes/**/*.html ./dist",
     "postbuild:package.json": "./node_modules/.bin/copyfiles ./package.json ./dist",
+    "postbuild:icon": "./node_modules/.bin/copyfiles ./alexa-icon-small.png ./dist/icons",
     "deploy:dev": "npm --prefix ~/.node-red install ./dist --save",
     "clean:dist": "./node_modules/.bin/rimraf ./dist"
   },
@@ -28,9 +29,7 @@
   },
   "dependencies": {
     "ask-sdk": "^2.1.0-beta.4",
-    "ask-sdk-model": "^1.4.0-beta.1",
-    "install": "^0.12.1",
-    "npm": "^6.4.1"
+    "ask-sdk-model": "^1.4.0-beta.1"
   },
   "devDependencies": {
     "@types/body-parser": "^1.17.0",

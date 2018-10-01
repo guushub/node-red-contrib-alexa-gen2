@@ -1,14 +1,14 @@
 <script type="text/javascript">
     RED.nodes.registerType('alexa speak',{
         category: 'Alexa gen2',
-        color: '#a6bbcf',
+        color: '#00CAFF',
         defaults: {
             name: {value:""},
             speech: {value:""}
         },
         inputs:1,
         outputs:1,
-        icon: "file.png",
+        icon: "alexa-icon-small.png",
         label: function() {
             return this.speech||"Alexa says";
         }

@@ -3,6 +3,7 @@ import * as AlexaSpeak from "./nodes/alexa-speak/alexa-speak";
 import * as AlexaConfig from "./nodes/alexa-config/alexa-config";
 import * as AlexaRequest from "./nodes/alexa-request/alexa-request";
 import * as AlexaResponse from "./nodes/alexa-response/alexa-response";
+import * as AlexaSwitch from "./nodes/alexa-switch/alexa-switch";
 
 module.exports = (RED: Red) => {
     AlexaConfig.register(RED);
@@ -12,4 +13,5 @@ module.exports = (RED: Red) => {
     AlexaSpeak.register(RED);
     AlexaRequest.register(RED);
     AlexaResponse.register(RED);
+    AlexaSwitch.register(RED);
 }

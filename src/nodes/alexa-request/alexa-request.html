@@ -1,7 +1,7 @@
 <script type="text/javascript">
     RED.nodes.registerType('alexa request',{
         category: 'Alexa gen2',
-        color: '#a6bbcf',
+        color: '#00CAFF',
         defaults: {
             name: {value:""},
             url: {value:"", required:true}
@@ -9,7 +9,7 @@
         inputs:0,
         outputs:4,
         outputLabels:["LaunchRequest", "CanFulfillIntentRequest", "IntentRequest", "SessionEndRequest"],
-        icon: "file.png",
+        icon: "alexa-icon-small.png",
         label: function() {
             return this.name||"Alexa Request";
         }

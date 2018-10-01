@@ -1,14 +1,14 @@
 <script type="text/javascript">
     RED.nodes.registerType('alexa response',{
         category: 'Alexa gen2',
-        color: '#a6bbcf',
+        color: '#00CAFF',
         defaults: {
             name: {value:""},
             shouldEndSession: {value:true, required:true}
         },
         inputs:1,
         outputs:0,
-        icon: "file.png",
+        icon: "alexa-icon-small.png",
         label: function() {
             return this.name||"Alexa Response";
         }

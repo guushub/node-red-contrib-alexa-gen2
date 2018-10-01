@@ -1,16 +1,68 @@
 <script type="text/javascript">
     RED.nodes.registerType('alexa switch',{
         category: 'Alexa gen2',
-        color: '#a6bbcf',
+        color: '#00CAFF',
         defaults: {
-            name: {value:""},
-            speech: {value:""}
+            intentName: {value:"", required: true},
+            slotName: {value:"", required: true},
+            slotValues: {value:[], required: true},
+            outputs: {value:1}
         },
         inputs:1,
         outputs:1,
-        icon: "file.png",
+        icon: "alexa-icon-small.png",
         label: function() {
-            return this.speech||"Alexa switch";
+            let label = "";
+            label = this.intentName ? this.intentName : label;
+            label = this.slotName ? label + " - " + this.slotName : label;
+
+            return this.name|| label ||"Alexa Switch";
+        },
+        outputLabels: function(i) {
+            if(this.slotValues.length > 0 && i >= 0) {
+                return this.slotValues[i];
+            }
+        },
+        oneditprepare: function() {
+            $("#node-input-slotValue-container").editableList({
+                addButton: "Add",
+                addItem: function(row, index, data) {
+                    var field = $('<input/>',{ 
+                        class:"node-input-rule-value",
+                        type:"text",
+                        style:"margin-left: 5px; width: 85%;"
+                    })
+                    if(typeof(data) === "string") {
+                        field.val(data);
+                    }
+                    field.appendTo(row);
+                },
+                removable: true,
+                removeItem: function(data) {
+                    console.log("An item has been removed")
+                },
+                sortable: true
+            });
+
+            for (var i=0;i<this.slotValues.length;i++) {
+                var slotValue = this.slotValues[i];
+                if(slotValue) {
+                    $("#node-input-slotValue-container").editableList('addItem', slotValue);
+                }
+            }
+        },
+        oneditsave: function() {
+            var slotValues = $("#node-input-slotValue-container").editableList('items');
+            var node = this;
+            node.slotValues = [];
+            slotValues.each(function(i) {
+                var slotValue = $(this).find('input').val()
+                if(slotValue) {
+                    node.slotValues.push(slotValue);
+                }
+            });
+
+            node.outputs = node.slotValues.length;
         }
     });
 </script>
@@ -30,9 +82,13 @@
         <label for="node-input-slotName"><i class="icon-tag"></i>Slot Name</label>
         <input type="text" id="node-input-slotName" placeholder="SlotName">
     </div>
+
+    <div class="form-row node-input-slotValue-container-row">
+        <ol id="node-input-slotValue-container"></ol>
+    </div>
     
 </script>
 
 <script type="text/x-red" data-help-name="alexa switch">
-    <p>A simple node that converts the message payloads into all say characters</p>
+    <p>A simple node that reads an IntentRequest and compares a value of a slot to a given value.</p>
 </script>
