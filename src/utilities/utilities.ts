@@ -1,3 +1,5 @@
+import * as AlexaNodeRed from "../alexa-node-red/alexa-node-red";
+import { HandlerInput } from "ask-sdk-core";
 
 export class Utilities {
     static createResponseWrapper(res: any) {
@@ -93,4 +95,56 @@ export class Utilities {
 
         return wrapper;
     }
+
+    static getSessionAttributes = (handlerInput: AlexaNodeRed.ExtendedHandlerInput, isError: boolean, shouldRespond: boolean) => {
+        let sessionAttributes: AlexaNodeRed.SessionAttributes = {
+            isError: null,
+            shouldRespond: null
+        };
+        if(handlerInput.requestEnvelope.alexaNodeRedSessionAttributes) {
+            sessionAttributes = handlerInput.requestEnvelope.alexaNodeRedSessionAttributes;
+        }
+        sessionAttributes.isError = isError;
+        sessionAttributes.shouldRespond = shouldRespond;
+
+        return sessionAttributes;
+    }
+    
+    static getResponseBuilder = (handlerInput : HandlerInput, alexaNodeRedSessionAttributes: AlexaNodeRed.SessionAttributes) => {
+        handlerInput.attributesManager.setSessionAttributes({alexaNodeRedSessionAttributes: alexaNodeRedSessionAttributes});
+        let responseBuilder = handlerInput.responseBuilder;
+        if(!alexaNodeRedSessionAttributes) {
+            return responseBuilder.withShouldEndSession(true);
+        }
+    
+        responseBuilder = responseBuilder.withShouldEndSession(alexaNodeRedSessionAttributes.withShouldEndSession === true);
+    
+        if(alexaNodeRedSessionAttributes.speachOutput) {
+            responseBuilder = responseBuilder.speak(alexaNodeRedSessionAttributes.speachOutput);
+        }
+    
+        if(alexaNodeRedSessionAttributes.card) {
+            responseBuilder = responseBuilder.withSimpleCard(
+                alexaNodeRedSessionAttributes.card.cardTitle, 
+                alexaNodeRedSessionAttributes.card.cardContent
+            );
+        }
+    
+        if(alexaNodeRedSessionAttributes.card && (alexaNodeRedSessionAttributes.card.smallImageUrl || alexaNodeRedSessionAttributes.card.largeImageUrl)) {
+            responseBuilder = responseBuilder.withStandardCard(
+                alexaNodeRedSessionAttributes.card.cardTitle, 
+                alexaNodeRedSessionAttributes.card.cardContent,
+                alexaNodeRedSessionAttributes.card.smallImageUrl,
+                alexaNodeRedSessionAttributes.card.largeImageUrl
+            )
+        }
+    
+        if(alexaNodeRedSessionAttributes.canFulfillIntent) {
+            responseBuilder = responseBuilder.withCanFulfillIntent(alexaNodeRedSessionAttributes.canFulfillIntent);
+        }
+    
+        return responseBuilder;
+    }
+    
 }
+

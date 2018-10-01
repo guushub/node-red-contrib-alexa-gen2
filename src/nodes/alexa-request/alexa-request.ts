@@ -1,25 +1,15 @@
 import * as bodyParser from "body-parser";
 
 import { Red, NodeProperties } from "node-red";
-
-import { HandlerInput, RequestHandler, ErrorHandler, ResponseInterceptor } from 'ask-sdk-core';
-import { Response, RequestEnvelope, ResponseEnvelope } from 'ask-sdk-model';
+import { RequestEnvelope } from 'ask-sdk-model';
 import { SkillBuilders } from "ask-sdk";
 
-import { AlexaNodeRedRequestType }  from "../../alexa-node-red/alexa-node-red";
+import * as AlexaNodeRed  from "../../alexa-node-red/alexa-node-red";
 import { Utilities } from "../../utilities/utilities";
 
 
 interface AlexaRequestNodeProperties extends NodeProperties {
     url: string; 
-}
-
-interface AlexaNodeRedResponse extends Response {
-    isError?: boolean
-}
-
-interface AlexaNodeRedResponseEnvelope extends ResponseEnvelope {
-    res
 }
 
 // Sources: 
@@ -41,47 +31,16 @@ export function register(RED: Red) {
             }
 
             const node = this;
-            const requestHandler: RequestHandler = {
-                canHandle: (handlerInput : HandlerInput) : boolean => {
-                    const typeIncoming = handlerInput.requestEnvelope.request.type;
-                    return typeIncoming === AlexaNodeRedRequestType.LaunchRequest || 
-                        typeIncoming === AlexaNodeRedRequestType.CanFulfillIntentRequest ||
-                        typeIncoming === AlexaNodeRedRequestType.IntentRequest ||
-                        typeIncoming === AlexaNodeRedRequestType.SessionEndedRequest
-                },
-                handle: (handlerInput : HandlerInput) : Response => {
-                    handlerInput.attributesManager.setSessionAttributes({
-                        isError: false
-                    });
-                    const response: AlexaNodeRedResponse = handlerInput.responseBuilder
-                    .getResponse()
-                    
-                    return response;
-                },
-            }
-            
-            const errorHandler: ErrorHandler = {
-                canHandle(handlerInput : HandlerInput, error : Error) : boolean {
-                    return error.name.startsWith('AskSdk');
-                },
-                handle(handlerInput : HandlerInput, error : Error) : AlexaNodeRedResponse {
-                    handlerInput.attributesManager.setSessionAttributes({
-                        isError: true
-                    });
-                    const response: AlexaNodeRedResponse = handlerInput.responseBuilder
-                    .speak('An error was encountered while handling your request. Try again later')
-                    .getResponse();
-                    return response;
-
-                },
-            };
     
             const skill = SkillBuilders.custom()
                   .addRequestHandlers(
-                    requestHandler
+                    AlexaNodeRed.LaunchRequest,
+                    AlexaNodeRed.CanFulfillIntentRequest,
+                    AlexaNodeRed.IntentRequest,
+                    AlexaNodeRed.SessionEndedRequest
                   )         
                   .addErrorHandlers(
-                    errorHandler
+                    AlexaNodeRed.AlexaNodeRedErrorHandler
                   )
                   .create();
 
@@ -90,7 +49,13 @@ export function register(RED: Red) {
                 const requestBody = req.body as RequestEnvelope;
                 skill.invoke(requestBody)
                 .then((responseBody) => {
-                    if(responseBody.sessionAttributes && responseBody.sessionAttributes.isError) {
+                    if(!responseBody.sessionAttributes || !responseBody.sessionAttributes.alexaNodeRedSessionAttributes) {
+                        res.status(500).jsonp('Error during the request. Unknown session attributes');
+                        return;
+                    }
+
+                    const sessionAttributes: AlexaNodeRed.SessionAttributes = responseBody.sessionAttributes.alexaNodeRedSessionAttributes;
+                    if(sessionAttributes.isError && sessionAttributes.shouldRespond) {
                         res.status(200).jsonp(responseBody);
                         return;
                     }
@@ -105,13 +70,13 @@ export function register(RED: Red) {
 
                     const msgPack = [null, null, null, null, null];
                     const reqType = msg.payload.alexaRequest.request.type;
-                    if(reqType === AlexaNodeRedRequestType.LaunchRequest) {
+                    if(reqType === AlexaNodeRed.RequestType.LaunchRequest) {
                         msgPack[0] = msg;
-                    } else if(reqType === AlexaNodeRedRequestType.CanFulfillIntentRequest) {
+                    } else if(reqType === AlexaNodeRed.RequestType.CanFulfillIntentRequest) {
                         msgPack[1] = msg;
-                    }  else if(reqType === AlexaNodeRedRequestType.IntentRequest) {
+                    }  else if(reqType === AlexaNodeRed.RequestType.IntentRequest) {
                         msgPack[2] = msg;
-                    }  else if(reqType === AlexaNodeRedRequestType.SessionEndedRequest) {
+                    }  else if(reqType === AlexaNodeRed.RequestType.SessionEndedRequest) {
                         msgPack[3] = msg;
                     } else {
                         msgPack[4] = msg;
